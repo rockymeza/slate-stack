@@ -1,0 +1,21 @@
+{
+  "name": "slate-stack",
+  "version": "0.1.0",
+  "private": true,
+  "dependencies": {
+    "ramda": "^0.23.0",
+    "react": "next",
+    "react-dom": "next",
+    "react-portal": "^3.1.0",
+    "react-slot-fill": "^1.0.0-alpha.11"
+  },
+  "devDependencies": {
+    "react-scripts": "0.9.5"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test --env=jsdom",
+    "eject": "react-scripts eject"
+  }
+}
