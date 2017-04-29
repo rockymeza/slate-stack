@@ -1,10 +1,12 @@
 import React from 'react';
 import Portal from 'react-portal';
 import { Provider as SlotProvider, Slot, Fill } from 'react-slot-fill';
+import { Plain } from 'slate';
 
 import Editor from './Editor';
+import './App.css';
 
-const EditorChrome = (toolbarLabel) => (props) =>
+const EditorChromePlugin = (toolbarLabel) => (props) =>
   <div>
     <span>{toolbarLabel}</span>
     <Editor.Plugin {...props} />
@@ -24,37 +26,24 @@ HoverMenu.Button = (props) =>
     <button className="HoverMenuButton" {...props} />
   </Fill>;
 
-class BoldPlugin extends React.Component {
-  handleClick = (event) => {
-    event.preventDefault();
-    console.log('clicked');
-  };
+const HoverMenuPlugin = () => HoverMenu;
 
-  render() {
-    return [
-      <Editor.Plugin key="editor" {...this.props} />,
-      <HoverMenu.Button key="button" onClick={this.handleClick}>
-        click me {this.props.state.endText.text}
-      </HoverMenu.Button>
-    ];
+const KeyLoggerPlugin = () =>
+  class KeyLoggerPlugin extends React.Component {
+    handleKeyDown = (event) => {
+      console.log('KeyLoggerPlugin', event.key);
+      return this.props.onKeyDown(event);
+    };
+
+    render() {
+      return (
+        <Editor.Plugin
+          {...this.props}
+          onKeyDown={this.handleKeyDown}
+        />
+      );
+    }
   }
-}
-
-class KeyLoggerPlugin extends React.Component {
-  handleKeyDown = (event) => {
-    console.log('KeyLoggerPlugin', event.key);
-    return this.props.onKeyDown(event);
-  };
-
-  render() {
-    return (
-      <Editor.Plugin
-        {...this.props}
-        onKeyDown={this.handleKeyDown}
-      />
-    );
-  }
-}
 
 const DisableKeyPlugin = (keys) =>
   class DisableKeyPlugin extends React.Component {
@@ -77,26 +66,90 @@ const DisableKeyPlugin = (keys) =>
     }
   };
 
+class HotKey extends React.Component {
+  handleKeyDown = (event, data) => {
+    if (data.isMod && this.props.keys.includes(data.key)) {
+      return this.props.onFire(event, data);
+    }
+    return this.props.onKeyDown(event, data);
+  }
+
+  render() {
+    return (
+      <Editor.Plugin
+        {...this.props}
+        onKeyDown={this.handleKeyDown}
+      />
+    );
+  }
+};
+
+const HotKeyMarkPlugin = ({ key, type }) =>
+  class HotKeyMark extends React.Component {
+    applyTransformation() {
+      return this.props.state
+        .transform()
+        .toggleMark(type)
+        .apply();
+    }
+
+    hasMark() {
+      const { state } = this.props;
+      return state.marks.some(mark => mark.type === type);
+    }
+
+    handleFire = (event) => {
+      event.preventDefault();
+      return this.applyTransformation();
+    }
+
+    handleClick = (event) => {
+      event.preventDefault();
+      const newState = this.applyTransformation();
+      this.props.onChange(newState);
+    }
+
+    render() {
+      return [
+        <HotKey
+          key="hotkey"
+          keys={[key]}
+          onFire={this.handleFire}
+          {...this.props}
+        />,
+        <HoverMenu.Button
+          key="button"
+          onMouseDown={this.handleClick}
+        >
+          {this.hasMark() && 'un-'}{key}
+        </HoverMenu.Button>
+      ];
+    }
+  };
+
+const schema = {
+  marks: {
+    bold: ({ children }) => <strong>{children}</strong>,
+  },
+};
+
 class App extends React.Component {
   state = {
-    editorState: '',
+    editorState: Plain.deserialize(''),
   };
 
   constructor(props) {
     super(props);
-    // XXX: if we don't cache the value of plugins over here, the
-    // textarea loses focus. I'm not sure if that's actually a
-    // problem in Slate where the focus is tracked in editorState.
     this.plugins = this.getPlugins();
   }
 
   getPlugins() {
     return [
-      EditorChrome('Toolbar'),
-      HoverMenu,
-      KeyLoggerPlugin,
+      EditorChromePlugin('Toolbar'),
+      HoverMenuPlugin(),
+      KeyLoggerPlugin(),
       DisableKeyPlugin(['e']),
-      BoldPlugin,
+      HotKeyMarkPlugin({ key: 'b', type: 'bold' }),
     ];
   }
 
@@ -110,6 +163,8 @@ class App extends React.Component {
     return (
       <SlotProvider>
         <Editor
+          className="DemoEditor"
+          schema={schema}
           plugins={this.plugins}
           state={this.state.editorState}
           onChange={this.handleChange}

@@ -7,7 +7,8 @@
     "react": "next",
     "react-dom": "next",
     "react-portal": "^3.1.0",
-    "react-slot-fill": "^1.0.0-alpha.11"
+    "react-slot-fill": "^1.0.0-alpha.11",
+    "slate": "^0.19.20"
   },
   "devDependencies": {
     "react-scripts": "0.9.5"

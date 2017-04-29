@@ -13,7 +13,7 @@ Here's a simple hotkey plugin:
 ```javascript
 class HotKey extends React.Component {
   handleKeyDown = (event, data) => {
-    if (data.isMod && this.props.keys.include(data.key)) {
+    if (data.isMod && this.props.keys.includes(data.key)) {
       return this.props.onFire(event, data);
     }
     return this.props.onKeyDown(event, data);
@@ -29,17 +29,27 @@ class HotKey extends React.Component {
 
 const HotKeyMarkPlugin = ({ key, type }) =>
   class HotKeyMark extends React.Component {
-    handleFire = (event) => {
-      event.preventDefault();
-      const newState = state
+    applyTransformation() {
+      return this.props.state
         .transform()
         .toggleMark(type)
         .apply();
-      this.props.onChange(newState);
+    }
+
+    handleFire = (event) => {
+      event.preventDefault();
+      return this.applyTransformation();
     }
 
     render() {
-      return <HotKey keys={[key]} onFire={this.handleFire} {...this.props} />;
+      return (
+        <HotKey
+          key="hotkey"
+          keys={[key]}
+          onFire={this.handleFire}
+          {...this.props}
+        />
+      );
     }
   };
 
@@ -92,32 +102,46 @@ const ToolbarPlugin = () => (props) =>
     <Editor.Plugin ...props />
   </div>
 
-const MarkPlugin = ({ key, type, label }) =>
-  class Mark extends React.Component {
-    toggleMark() {
-      const newState = this.props.state
+const HotKeyMarkPlugin = ({ key, type }) =>
+  class HotKeyMark extends React.Component {
+    applyTransformation() {
+      return this.props.state
         .transform()
         .toggleMark(type)
         .apply();
+    }
 
-      this.props.onChange(newState);
+    hasMark() {
+      const { state } = this.props;
+      return state.marks.some(mark => mark.type === type);
     }
 
     handleFire = (event) => {
       event.preventDefault();
-      this.toggleMark();
+      return this.applyTransformation();
     }
 
     handleClick = (event) => {
       event.preventDefault();
-      this.toggleMark();
+      const newState = this.applyTransformation();
+      this.props.onChange(newState);
     }
-    
+
     render() {
       return [
-        <HotKey key={key} onFire={this.handleFire} {...this.props />,
-        <Toolbar.Button onClick={this.handleClick}>{label}</Toolbar.Button>,
+        <HotKey
+          key="hotkey"
+          keys={[key]}
+          onFire={this.handleFire}
+          {...this.props}
+        />,
+        <Toolbar.Button
+          key="button"
+          onMouseDown={this.handleClick}
+        >
+          {this.hasMark() && 'un-'}{key}
+        </Toolbar.Button>
       ];
     }
-  }
+  };
 ```

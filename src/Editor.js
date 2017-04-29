@@ -1,11 +1,12 @@
 import React from 'react';
+import { Editor as SlateEditor } from 'slate';
 
 import Stack from './Stack';
 
 const noop = () => {};
 
-export const Core = ({ plugins, ...inputProps }) =>
-  <textarea {...inputProps} />;
+export const Core = ({ plugins, ...editorProps }) =>
+  <SlateEditor {...editorProps} />;
 
 const Editor = ({ plugins, ...props }) =>
   <Stack
